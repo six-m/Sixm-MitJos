@@ -66,28 +66,30 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	uint32_t eip=read_eip();
 	uint32_t ebp=read_ebp();
 	//Print current eip and ebp
-	cprintf("Stack backtrace:");
-	cprintf("ebp %x eip %x",ebp,eip);
+	cprintf("Stack backtrace:\r\n");
+	cprintf(" ebp:%x eip:%x ",ebp,eip);
 	//Print current fuction's args	
 	uint32_t esp=ebp + 0x8;
 	int i;
 	cprintf("args:");
 	for(i=0;i<5;i++){
-		cprintf("%x",*(uint32_t *)(esp));
+		cprintf("%x ",*(uint32_t *)(esp));
 		esp=esp+0x4;	
 	}
 	cprintf("\r\n");
 	//Print fuction before
 	while(ebp!=0){
 		esp=ebp;
-		ebp=*(uint32_t *)(esp);
+		if((ebp=*(uint32_t *)(esp))==0){
+			break;
+		}
 		esp=esp+0x4;
 		eip=*(uint32_t *)(esp);
 		esp=esp+0x4;
-		cprintf("ebp %x eip %x",ebp,eip);
+		cprintf(" ebp:%x eip:%x ",ebp,eip);
 		cprintf("args:");
 		for(i=0;i<5;i++){
-			cprintf("%x",*(uint32_t *)(esp));
+			cprintf(" %x",*(uint32_t *)(esp));
 			esp=esp+0x4;	
 		}
 		cprintf("\r\n");	
