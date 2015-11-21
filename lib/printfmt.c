@@ -207,10 +207,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		case 'o':
 			// Replace this with your code.
 			// It's homework1 we need to do. by Sixm
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			num = getuint(&ap,lflag);
+			base = 8;
+			goto number;
 
 		// pointer
 		case 'p':
