@@ -98,8 +98,9 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-
-	return NULL;
+	result=nextfree;
+	nextfree+=ROUNDUP(n,PGSIZE);//I don't know how to use the func ROUNDUP	
+	return result;
 }
 
 // Set up a two-level page table:
@@ -121,7 +122,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	//panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -143,8 +144,8 @@ mem_init(void)
 	// each physical page, there is a corresponding struct Page in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
-
-
+	pages=(struct Page*)boot_alloc(npages*sizeof(struct Page));
+	
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -252,6 +253,16 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
+	//Remove page 0 from page_free_list
+	pages[1].pp_link=0;
+	//Remove IO hole from page_free_list
+	struct Page* pgIOHoleS=pa2page((physaddr_t)IOPHYSMEM);
+	struct Page* pgIOHoleE=pa2page((physaddr_t)EXTPHYSMEM);
+	pgIOHoleE->pp_link=pgIOHoleS->pp_link;
+	//Remove used memory in extended memory
+	extern char end[];
+	struct Page* pgFreeMem=pa2page((physaddr_t)(end-KERNBASE+PGSIZE+npages*sizeof(struct Page)))+1;//'end -KERNBASE' for memory used before boot_allo(),'PGSIZE'for kern_pgdir,'npages*sizeof(struct Page)'for pages
+	 pgFreeMem->pp_link=pgIOHoleE->pp_link;
 }
 
 //
@@ -267,7 +278,17 @@ struct Page *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	return 0;
+	//Remove a page from page_free_list
+	if(page_free_list==NULL){
+		return NULL;
+	}
+	struct Page* result=page_free_list;
+	page_free_list=page_free_list->pp_link;
+	//fills the page result with '\0'
+	if(alloc_flags & ALLOC_ZERO){
+		memset(page2kva(result),'\0',PGSIZE);	
+	}
+	return result;
 }
 
 //
@@ -278,6 +299,8 @@ void
 page_free(struct Page *pp)
 {
 	// Fill this function in
+	pp->pp_link=page_free_list;
+	page_free_list=pp;
 }
 
 //
